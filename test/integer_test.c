@@ -180,6 +180,32 @@ START_TEST (en_decode_2147483647_5bits)
 }
 END_TEST
 
+START_TEST (decode_too_big_for_int)
+{
+    ret_t         ret;
+    int           num   = 0;
+    unsigned int  con   = 0;
+    char *data64 = "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
+    char *data32 = "\xFF\xFF\xFF\xFF\xFF\x0A";
+    char *data;
+
+    /* ffff ffff ff0a = 2952790270 [for 32 bits int]
+     * ffff ffff ffff ffff ffff = 9223372036854776062 [for 64 bits int]
+     *
+     * This test tries to decode a number too big for the integer type of the
+     * machine, which is an error.
+     *
+     * If this error has not been dealt with in the decoding function would lead
+     * to a negative number.
+     */
+    data = sizeof(int) > 32? data64 : data32;
+    ret = integer_decode (8, data, strlen(data), &num, &con);
+    ck_assert (num >= 0);
+    ck_assert (ret != ret_ok);
+    ck_assert (con == 0);
+}
+END_TEST
+
 
 int
 encode_tests (void)
@@ -204,6 +230,7 @@ decode_tests (void)
     check_add (s1, decode_34_6bits);
     check_add (s1, decode_1337_5bits);
     check_add (s1, en_decode_2147483647_5bits);
+    check_add (s1, decode_too_big_for_int);
 
     run_test (s1);
 }
